@@ -1,0 +1,4 @@
+build/*.js
+config/*.js
+proxy.config.js
+test

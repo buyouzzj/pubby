@@ -1,0 +1,275 @@
+#!/usr/bin/env node
+var chalk = require('chalk');
+var inquirer = require('inquirer');
+var vfs = require('vinyl-fs');
+var fs = require('fs');
+var through = require('through2');
+var path = require('path');
+var join = path.join;
+var basename = path.basename;
+var username = require('username');
+
+var init = require('../lib/init');
+
+// 初始化命令Runner
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var questions = [
+  {
+    type: 'list',
+    name: 'type',
+    message: '请指定工程类型: ',
+    choices: ['React Project', 'React Mobile Project', 'Component Project', 'Vue Project (multi-page)', 'Vue Project (single-page)'],
+    // choices: ['Vue Project (multi-page)', 'Vue Project (single-page)', 'Component Project (common)', 'Component Project (vue)'],  'Component Project'
+    filter: function (val) {
+      return val; //val.toLowerCase().split(' ')[0];
+    }
+  },
+  {
+    type: 'input',
+    name: 'name',
+    message: '请输入工程名: ',
+    validate: function (value) {
+      if (value) {
+        return true;
+      }
+      return '请输入正确的工程名';
+    }
+  },
+  {
+    type: 'input',
+    name: 'description',
+    message: '请输入工程描述: ',
+    validate: function (value) {
+      if (value) {
+        return true;
+      }
+      return '请输入正确的工程描述';
+    }
+  },
+  {
+    type: 'input',
+    name: 'keywords',
+    message: '请输入工程关键词，以半角,分隔: ',
+    validate: function (value) {
+      return true;
+    }
+  },
+  {
+    type: 'list',
+    name: 'encoding',
+    message: '请指定工程编码: ',
+    choices: ['utf-8', 'gbk']
+  },
+  {
+    type: 'input',
+    name: 'source',
+    message: '请输入工程gitlab源地址: ',
+    validate: function (value) {
+      if (value.match('gitlab') && value.match('.com')) {
+        return true;
+      }
+      return '请输入正确的源地址';
+    }
+  }
+];
+
+var VueWriteFiles = ['!src/views/index/index.vue', '!src/views/todo/index.vue', '!src/layouts/header-layout/index.vue', '!src/layouts/footer-layout/index.vue'];
+
+init(function() {
+  // 判断文件夹是否为空
+  var files = fs.readdirSync(process.cwd());
+  var isEmpty = true;
+  for (var i = 0; i < files.length; i++) {
+    if (!files[i].toLowerCase().match('.ds_store')) {
+      isEmpty = false;
+      break;
+    }
+  }
+  if (!isEmpty) {
+    inquirer.prompt({
+      type: 'confirm',
+      name: 'continueFlag',
+      message: '当前工程目录不为空，是否继续生成？',
+      default: false
+    }).then(function(answers) {
+      if (answers.continueFlag) {
+        console.log(' ');
+        initProcess();
+      }
+    });
+  } else {
+    initProcess();
+  }
+}, 'IGNORE_CUBE_CHECK');
+
+var IsVueComponent = false;
+
+function initProcess() {
+  inquirer.prompt(questions).then(function(answers) {
+    var type = answers.type.split(' ')[0].toLowerCase();
+    if (answers.type === 'React Mobile Project') {
+      type = 'react-mobile';
+    }
+    if (answers.type === 'Component Project') {
+      type = 'react-component';
+    }
+    var cwd = join(__dirname, '../boilerplates', type + '-plate');
+    var dest = process.cwd();
+    // vue
+    if (answers.type.indexOf('Vue') > -1) {
+      var exceptInSingle = ['!src/_entries/index.js', '!src/_entries/todo.js', '!screen/index.html', '!screen/todo.html'];
+      var exceptInMulti = ['!src/_entries/app.js', '!screen/app.html', '!src/router.js', '!src/views/app/*'];
+
+      var exceptFiles = answers.type.indexOf('multi') > -1 ? exceptInMulti : exceptInSingle;
+
+      vfs.src(['**/*', '!node_modules/**/*', '!.git/**/*', '!dist/**/*', '!vm/**/*', '!test/unit/coverage/**/*'].concat(exceptFiles), {cwd: cwd, cwdbase: true, dot: true})
+        .pipe(template(dest))
+        .pipe(vfs.dest(dest))
+        .on('end', function() {
+          fs.renameSync(path.join(dest,'gitignore'),path.join(dest,'.gitignore'));
+          // 单页应用下把app.html换成index.html
+          if (answers.type.indexOf('single') > -1) {
+            fs.renameSync(path.join(dest + '/screen', 'app.html'),path.join(dest + '/screen','index.html'));
+          }
+          answers.type = type;
+          writePackage(answers);
+          // readAndWrite(VueWriteFiles, function() {
+          // });
+        })
+        .resume();
+    }
+    // component
+    if (answers.type.indexOf('Component') > -1) {
+      vfs.src(['**/*', '!node_modules/**/*', '!.git/**/*', '!coverage/**/*'], {cwd: cwd, cwdbase: true, dot: true})
+        .pipe(template(dest))
+        .pipe(vfs.dest(dest))
+        .on('end', function() {
+          fs.renameSync(path.join(dest,'gitignore'),path.join(dest,'.gitignore'));
+          if (answers.type.indexOf('vue') > -1) {
+            IsVueComponent = true;
+          }
+          answers.type = answers.type === 'Component Project' ? 'react-component' : type;
+          writePackage(answers);
+        })
+        .resume();
+    }
+    // react
+    else if (answers.type.indexOf('React') > -1) {
+      vfs.src(['**/*', '!node_modules/**/*', '!.git/**/*', '!coverage/**/*', '!dist/**/*', '!vm/**/*'], {cwd: cwd, cwdbase: true, dot: true})
+        .pipe(template(dest))
+        .pipe(vfs.dest(dest))
+        .on('end', function() {
+          fs.renameSync(path.join(dest,'gitignore'),path.join(dest,'.gitignore'));
+          if (answers.type.indexOf('vue') > -1) {
+            IsVueComponent = true;
+          }
+          answers.type = type;
+          writePackage(answers);
+        })
+        .resume();
+    }
+  });
+}
+
+function readAndWrite(fileArray, cb) {
+  if (fileArray.length > 0) {
+    fs.readFile(__dirname + '/../boilerplates/vue-plate/' + fileArray[0].replace('!', ''), 'utf-8', function (err, data) {
+      if (err) throw err
+      fs.writeFile(process.cwd() + '/' + fileArray[0].replace('!',''), data, function (err) {
+        if (err) throw err
+        fileArray.shift();
+        readAndWrite(fileArray, cb);
+      });
+    });
+  } else {
+    cb();
+  }
+};
+
+var pkgComponent = require('../boilerplates/component-plate/package.json');
+var pkgVue = require('../boilerplates/vue-plate/package.json');
+var pkgReact = require('../boilerplates/react-plate/package.json');
+var pkgReactMobile = require('../boilerplates/react-mobile-plate/package.json');
+var pkgReactComponent = require('../boilerplates/react-component-plate/package.json');
+
+function writePackage(answers) {
+  console.log("\n"+chalk.green.inverse("成功") + " " + "工程文件准备就绪\n");
+  // 清除readme
+  fs.readFile(process.cwd() + '/README.md', 'utf-8', function (err, data) {
+    if (err) throw err
+    // 清除更新历史
+    data = data.split('更新历史\n')[0] + "更新历史\n\n" + data.split('更新历史\n')[1];
+    // 替换name
+    if (answers.type.match("component")) {
+      data = data.replace(/__\[组件名\]\S*__/, "__[组件名]"+answers.name+"__");
+    } else {
+      data = data.replace(/__\[工程名\]\S*__/, "__[工程名]"+answers.name+"__");
+    }
+
+    fs.writeFile(process.cwd() + '/README.md', data, function (err) {
+      if (err) throw err
+      console.log(chalk.green.inverse("成功") + " " + "初始化README.md\n");
+
+      // package.json修改
+      var pkg = null;
+      if (answers.type === 'vue') pkg = pkgVue;
+      if (answers.type === 'react') pkg = pkgReact;
+      if (answers.type === 'react-mobile') pkg = pkgReactMobile;
+      if (answers.type === 'react-component') pkg = pkgReactComponent;
+      if (answers.type === 'component') pkg = pkgComponent;
+
+      pkg.name = answers.type === 'component' ? "@alipay/" + answers.name : answers.name;
+      pkg.version = "1.0.0";
+      pkg.description = answers.description;
+      pkg.keywords = answers.keywords.split(',');
+      pkg.author = username.sync();
+      pkg.repository.url = answers.source;
+      pkg.cube.encoding = answers.encoding;
+      // if (answers.type.match('component')) {
+      //   pkg.cube.type = answers.type;
+      // } else {
+      //   answers.type === 'react' ? 'react-project' : 'project';
+      //
+      // }
+      // vue组件，不需引用打包版
+      if (IsVueComponent) {
+        // pkg.main = 'index.js';
+        // var gitIgnore = fs.readFileSync(process.cwd() + '/.gitignore', 'utf-8');
+        // var npmIgnore = fs.readFileSync(process.cwd() + '/.npmignore', 'utf-8');
+        // gitIgnore += 'dist/';
+        // npmIgnore += 'dist/';
+        // fs.writeFileSync(process.cwd() + '/.gitignore', gitIgnore);
+        // fs.writeFileSync(process.cwd() + '/.npmignore', npmIgnore);
+      }
+      fs.writeFile(process.cwd() + '/package.json', JSON.stringify(pkg, null, 2), function (err) {
+        if (err) throw err
+        console.log(chalk.green.inverse("成功") + " " + "package.json初始化成功\n");
+        taskList();
+      })
+    })
+  });
+}
+
+function taskList() {
+  starter
+  .run('tnpm ii', {inf: "正在安装依赖", display: "realtime"})
+  .run('git init', {inf: "初始化git项目"})
+  .do()
+}
+
+function template(dest) {
+  return through.obj(function (file, enc, cb) {
+    if (!file.stat.isFile()) {
+      return cb();
+    }
+    console.log('Write %s', simplifyFilename(join(dest, basename(file.path))));
+    this.push(file);
+    cb();
+  });
+}
+
+function simplifyFilename(filename) {
+  return filename.replace(process.cwd(), ".");
+}

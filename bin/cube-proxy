@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+var fs = require('fs');
+var path = require('path');
+var init = require('../lib/init');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var proxy = require('../lib/plugins/proxy');
+
+var pkg = require(path.join(process.cwd(), './package.json'));
+
+const port = process.env.cube_port || 8001;
+const devPort = process.env.cube_devport || 9090;
+
+function defaultRuleGenerator() {
+  var str = '';
+  var domains = ['https://a.test.alipay.net', 'http://as.test.alipay.net', 'http://dsj.assets.alipay.net', 'https://as.alipayobjects.com', 'https://a.alipayobjects.com', 'https://gw.alipayobjects.com'];
+  var resURIBaseVersion = '/' + pkg.cube.domain + pkg.name.replace('@alipay/','') + '/1.0.0/';
+  var resURI = '/' + pkg.cube.domain + pkg.name.replace('@alipay/','') + '/' + pkg.version + '/';
+  domains.forEach((domain) => {
+    str += domain + resURIBaseVersion + ' ' + 'http://localhost:' + devPort;
+    str += '\n';
+    str += domain + resURI + ' ' + 'http://localhost:' + devPort;
+    str += '\n';
+  });
+  return str;
+}
+
+init(function(){
+  if (true) { // process.env['cube_w']
+    const rulePath = path.join(__dirname, '../lib/plugins/w2rules/.w2');
+    fs.writeFileSync(rulePath, defaultRuleGenerator());
+    starter
+    .run('node "' + path.join(require.resolve('whistle').replace('index.js', ''), './bin/whistle') + '"' + ' run --port ' + port + ' --extra rules=' + rulePath, {inf: '正在启动静态代理与数据mock服务\n', display: "realtime"})
+    .do();
+    return;
+  }
+
+  proxy({ port });
+  // starter
+  // .run('node "' + path.join(require.resolve('dora').replace('index.js', ''), '../bin/dora') + '"' + ' --port 8000 --plugins dora-plugin-proxy?port=8001', {inf: '正在启动静态代理与数据mock服务\n', display: "realtime"})
+  // .do();
+});

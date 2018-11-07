@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "env": {
+    "mocha": true,
+    "node": true,
+    "browser": true
+  },
+  "extends": "airbnb-base",
+  // required to lint *.vue files
+  "plugins": [
+    "html"
+  ],
+  // add your custom rules here
+  "rules": {
+    'import/no-unresolved': 0,
+    'no-new': 0,
+    'no-console': 0,
+    'no-underscore-dangle': 0,
+    'prefer-template': 0,
+    'max-len': 0,
+    'linebreak-style': 0,
+    // allow debugger during development
+    // process.env.NODE_ENV === 'production' ? 2 : 0
+    'no-debugger': 2
+  }
+}

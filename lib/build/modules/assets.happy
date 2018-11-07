@@ -1,0 +1,107 @@
+const moduleConfig = '&modules&localIdentName=[local]___[hash:base64:5]';
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const projectRoot = process.cwd();
+const pkg = require(projectRoot + '/package.json');
+const argv = require('yargs').argv;
+const utils = require('../utils');
+
+const createHappyPlugin = require('../../plugins/happy-pack');
+
+/**
+ * 控制版本信息
+ */
+var pkgVersion = pkg.version;
+// 生产编译不带版本号，cdn自动加
+if (argv.prod) {
+  pkgVersion = '';
+}
+
+const cssDevConfig = (
+  'style-loader!' + // insert to dom
+  // 'stylelint!' +
+  'css?sourceMap&-autoprefixer!' +
+  'postcss-loader!' +
+  'sass'
+);
+
+const cssProdConfig = (
+  // 'stylelint!' +
+  'css?-autoprefixer!' +
+  'postcss-loader!' +
+  'sass'
+);
+
+module.exports = {
+  happyPackAssetsPlugins: [
+    createHappyPlugin('devCss', [cssDevConfig]),
+    createHappyPlugin('prodCss', [cssProdConfig]),
+    createHappyPlugin('stylelint', ['stylelint']),
+    createHappyPlugin('url', ['url']),
+  ],
+  dev: [
+    {
+      test: /\.(s?)css$/,
+      loader: 'happypack/loader?id=devCss',
+      // loader: cssDevConfig,
+    },
+    {
+      test: /\.scss$/,
+      loader: 'happypack/loader?id=stylelint',
+      // loader: 'stylelint',
+    },
+    {
+      test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+      loader: 'happypack/loader',
+      // loader: 'url',
+      query: {
+        id: 'url',
+        limit: 10000,
+        name: utils.assetsPath('img/[name].[ext]') // [hash:7]
+      }
+    },
+    {
+      test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+      loader: 'happypack/loader',
+      // loader: 'url',
+      query: {
+        id: 'url',
+        limit: 10000,
+        name: utils.assetsPath('font/[name].[ext]') // [hash:7]
+      }
+    }
+  ],
+  prod: [
+    {
+      test: /\.(s?)css$/,
+      // loader: ExtractTextPlugin.extract({
+      //   loader: 'happypack/loader?id=prodCss',
+      // }),
+      loader: ExtractTextPlugin.extract(cssProdConfig),
+    },
+    {
+      test: /\.scss$/,
+      loader: 'happypack/loader?id=stylelint',
+      // loader: 'stylelint',
+    },
+    {
+      test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+      loader: 'happypack/loader',
+      // loader: 'url',
+      query: {
+        id: 'url',
+        limit: 10000,
+        name: utils.assetsPath(pkgVersion + '/' + 'img/[name].[ext]') // [hash:7]
+      }
+    },
+    {
+      test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+      loader: 'happypack/loader',
+      // loader: 'url',
+      query: {
+        id: 'url',
+        limit: 10000,
+        name: utils.assetsPath(pkgVersion + '/' + 'font/[name].[ext]') // [hash:7]
+      }
+    }
+  ]
+};

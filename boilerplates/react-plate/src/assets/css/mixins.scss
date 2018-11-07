@@ -1,0 +1,39 @@
+/* mixin */
+@mixin text-ellipsis() {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+@mixin input-size($size) {
+  @if $size == lg {
+    padding: 10px 16px;
+    font-size: 18px;
+    line-height: 1.3333333;
+    border-radius: 4px;
+  }
+
+  @else if $size == sm {
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 2px;
+  }
+
+  @else {
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    border-radius: 3px;
+  }
+}
+
+@mixin gradient($from, $to, $direction) {
+  background-color: $from;
+  background-color: -webkit-gradient(linear, 0% 0%, 0% 100%, from($from), to($to));
+  background-color: -webkit-gradient(top, $from, $to);
+  background-color: -moz-gradient(top, $from, $to);
+  background-color: -o-gradient(top, $from, $to);
+  background-color: -ms-gradient(top, $from, $to);
+  filter: progid:dximagetransform.microsoft.gradient(startColorStr=$from, endColorStr=$to, gradientType='0');
+}

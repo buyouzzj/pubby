@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+init(function(){
+  starter
+  .run(code.dev, {inf: "启动开发模式", display: "realtime"})
+  .do();
+});

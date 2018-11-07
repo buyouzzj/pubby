@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+var path = require('path');
+var init = require('../lib/init');
+
+init(function(){
+  var qtLogin = require(path.join(__dirname, '../lib/utils/qt-login'));
+  qtLogin();
+});

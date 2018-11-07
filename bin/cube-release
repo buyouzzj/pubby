@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+var request = require('request');
+var fs = require('fs');
+var path = require('path');
+var chalk = require('chalk');
+
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+var pkg = require('../lib/utils/pkg');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+function getUserHome() {
+  return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+}
+
+init(function() {
+  var qtRoot = require.resolve('@alipay/qingting').replace('main.js', '');
+  var qtInitPath = path.join(qtRoot, './bin/qt-init.js');
+  var qtUserUtil = require(path.join(qtRoot, './lib/user'));
+
+  if (!fs.existsSync(path.resolve(getUserHome(), '.qtrc'))) {
+    starter
+    .run('node "' + qtInitPath + '"', {inf: "初始化蜻蜓项目", display: "silent"})
+    .do();
+  }
+
+  if (!qtUserUtil.isLogin()) {
+    console.log(chalk.red.inverse("失败") + " " + "请先执行cube login命令登录蜻蜓");
+    return;
+  }
+
+  // 获取分支名
+  var branchName = git.getBranch();
+  var newVersion = '';
+
+  // 切换到prod分支
+  if (branchName !== 'prod') {
+    starter.run(git.checkout('prod'), {inf: '当前分支 ' + branchName + '，切换到 prod 分支'});
+    process.on('exit', function () {
+      if (branchName !== 'prod') {
+        exec(git.checkout(branchName), { silent: true });
+        console.log('\n' + chalk.inverse("执行") + " " + '切换回 ' + branchName + ' 分支');
+      }
+    });
+  }
+
+  starter
+  .run(git.pull('prod'), {inf: "获取远程 prod 分支更新", callback: function(status) {
+    if (status === 'SUC') {
+      var ver = pkg.content().version;
+
+      if (exec('git tag', { silent: true }).stdout.match(ver)) {
+        starter
+        .run(git.delTag(ver), { inf: "清理版本TAG " + ver })
+      }
+
+      starter
+      .run(git.tag(ver), {inf: "新增版本TAG " + ver})
+      .run(git.pushTag(ver), {inf: "推送TAG到远程仓库", doOnce: true, callback: function(res) {
+        console.log(chalk.inverse("执行") + " " + "正在请求蜻蜓构建\n");
+        var token = '8c8fb28c891760a26faafcee8bd8d5be';
+        request.post({
+          url: 'https://rmsportal.alipay.com/api/v1/build?private_token=' + token,
+          json: true,
+          body: {
+            groupName: pkg.get('cube').domain.replace('g/', '').replace('/', ''),
+            repoName: pkg.get('name'),
+            tag: ver
+          }
+        }, function(err, resp, body) {
+          if (resp.statusCode == 200) {
+            var cmd = '';
+            var url = 'https://rmsportal.alipay.com/jobs#/' + body.jobId;
+            if (process.platform === 'win32') cmd = 'start';
+            else if (process.platform === 'linux') cmd = 'xdg-open';
+            else if (process.platform === 'darwin') cmd = 'open';
+            exec(cmd + ' "' + url + '"');
+            console.log(chalk.green.inverse("成功") + " " + "蜻蜓构建命令发送成功\n");
+            console.log('任务地址：' + url + '\n');
+          } else {
+            console.log(chalk.red.inverse("失败") + " " + "执行蜻蜓构建失败\n");
+            console.log(body);
+          }
+        });
+      }})
+    }
+  }})
+  .do();
+});

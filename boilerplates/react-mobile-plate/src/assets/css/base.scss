@@ -1,0 +1,18 @@
+/* base */
+.container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.show { display: block !important; }
+.hide { display: none !important; }
+
+.clearFix::after {
+  content: '';
+  display: block;
+  height: 0;
+  clear: both;
+  overflow: hidden;
+  visibility: hidden;
+}
+.clearFix { *zoom: 1; }

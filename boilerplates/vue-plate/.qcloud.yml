@@ -1,0 +1,4 @@
+type: assets
+build:
+  - tnpm i
+  - node build/build.js --prod

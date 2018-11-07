@@ -1,0 +1,135 @@
+@import './variables';
+
+/* reset */
+body,
+div,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+form,
+textarea,
+p,
+th,
+td,
+tr,
+table,
+tbody,
+thead,
+tfoot,
+em,
+strong,
+span,
+img,
+section,
+input {
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1;
+}
+
+body {
+  -webkit-touch-callout: none;
+  text-size-adjust: none;
+  font-family: $font-family;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+img {
+  border: 0 none;
+  vertical-align: middle;
+}
+
+em {
+  font-weight: normal;
+  font-style: normal;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+ul,
+li {
+  list-style-type: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: normal;
+  font-size: 100%;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: 0.1s color ease-out;
+}
+
+a:hover {
+  text-decoration: none;
+  color: $blue-base;
+}
+
+input,
+textarea {
+  font-size: 12px;
+  line-height: 1.42857143;
+  outline: 0;
+  outline: 0 none;
+  appearance: none;
+  border-radius: 0;
+  border: none;
+  box-sizing: border-box;
+}
+
+input,
+textarea,
+button {
+  font-family: $font-family;
+}
+
+button {
+  line-height: 1;
+  font-weight: 500;
+}
+
+:not(input, textarea) {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+* {
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  word-break: break-all;
+  touch-action: manipulation;
+  -webkit-touch-action: manipulation;
+  -ms-touch-action: manipulation;
+}
+
+[hidden] {
+  display: none !important;
+}

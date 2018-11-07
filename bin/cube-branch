@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+var inquirer = require('inquirer');
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+
+// 初始化命令Runner
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+// 版本号管理
+var questions = [
+  {
+    type: 'input',
+    name: 'branch',
+    message: '请输入新分支名称: ',
+    validate: function (value) {
+      if (value) {
+        return true;
+      }
+      return '请输入新分支名称';
+    }
+  }
+];
+
+init(function() {
+  // 获取分支名
+  var branchName = git.getBranch();
+  // 获取仓库更新
+  starter
+  .run(git.checkout('master'), {inf: "切换到 master 分支"})
+  .run(git.pull('master'), {inf: '获取仓库 master 分支更新', doOnce: true, callback: function() {
+    inquirer.prompt(questions).then(function(answers) {
+      console.log('');
+      starter.run(git.checkout(answers.branch, '-b'), {inf: '创建新分支 ' + answers.branch}).do();
+    });
+  }}).do();
+});

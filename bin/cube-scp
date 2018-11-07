@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+var path = require('path');
+var chalk = require('chalk');
+var fs = require('fs');
+var params = process.argv;
+
+var init = require('../lib/init');
+var pkg = require('../lib/utils/pkg');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+function getUserHome() {
+  return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+}
+
+init(function(){
+
+  var qtRoot = require.resolve('@alipay/qingting').replace('main.js', '');
+  var qtScpPath = path.join(qtRoot, './bin/qt-scp.js');
+  var qtInitPath = path.join(qtRoot, './bin/qt-init.js');
+  var qtUserUtil = require(path.join(qtRoot, './lib/user'));
+  var cdnTest = require('../lib/build/modules/cdnUrl').test;
+  var pkgUrl = cdnTest + pkg.get('cube').domain + pkg.get('name');
+
+  if (!fs.existsSync(path.resolve(getUserHome(), '.qtrc'))) {
+    starter
+    .run('node "' + qtInitPath + '"', {inf: "初始化蜻蜓项目", display: "silent"})
+    .do();
+  }
+
+  if (!qtUserUtil.isLogin()) {
+    console.log(chalk.red.inverse("失败") + " " + "请先执行cube login命令登录蜻蜓");
+    return;
+  }
+
+  if (params[2] !== '-n') {
+    starter.run(code.buildBaseVersion, {inf: "正在执行编译", display: "realtime"}); // 开发环境多变，drm不易保存，统一1.0.0
+  }
+
+  var sourcePath = 'dist/*';
+  if (process.platform === 'win32') sourcePath = 'dist/1.0.0';
+
+  starter.run('node "' + qtScpPath + '" ' + sourcePath + ' ' + pkgUrl, {inf: "正在上传至蜻蜓测试环境", display: "realtime"})
+  .do();
+
+});

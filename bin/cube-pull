@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+
+// 初始化命令Runner
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+init(function(){
+  starter
+  .run(git.pull(git.getBranch()), {inf: "获取仓库更新", display: "realtime"})
+  .do();
+});

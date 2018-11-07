@@ -1,0 +1,6 @@
+dist/*
+webpack.config.js
+karma.config.js
+proxy.config.js
+test/
+coverage/

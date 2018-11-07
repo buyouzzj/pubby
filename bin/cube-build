@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+var init = require('../lib/init');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var params = process.argv;
+
+init(function(){
+  if (params.join().match('prod')) {
+    exec(code.prod);
+  } else {
+    starter
+    .run(code.build, {inf: "正在执行编译", display: 'realtime'})
+    .do();
+  }
+});

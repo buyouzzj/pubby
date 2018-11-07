@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+if (process.platform.toLowerCase().match('win32')) {
+  starter
+  .run('tnpm ii @alipay/dt-cube -g', {inf: "正在更新CUBE命令行", display: "realtime"})
+  .do();
+} else {
+  starter
+  .run('sudo tnpm ii @alipay/dt-cube -g', {inf: "正在更新CUBE命令行", display: "realtime"})
+  .run('sudo chown -R $(whoami) ~/.npm && sudo chown -R $(whoami) /usr/local/lib/node_modules', {inf: "正在执行更新脚本", display: "realtime"})
+  .do();
+}

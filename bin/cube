@@ -1,0 +1,63 @@
+#!/usr/bin/env node
+require('shelljs/global');
+var chalk = require('chalk');
+
+require('commander')
+  .version(require('../package').version)
+  .usage('<command> [options]')
+  .command('init', '新建vue/react工程')
+  .command('i', '从tnpm安装依赖')
+  .command('update', '更新依赖')
+  .command('u', '卸载一个依赖')
+  .command('pull', '更新本地代码仓库')
+  .command('push', '更新远程代码仓库')
+  .command('branch', '创建一个新分支')
+  .command('upgrade', '更新命令行')
+  .command('dev', '开启工程调试')
+  .command('build', '构建一次工程')
+  .command('commit', '提交变更到代码仓库')
+  .command('proxy', '开启静态文件代理与数据mock服务')
+  .command('scp', '上传到蜻蜓测试环境')
+  .command('login', '蜻蜓登录授权')
+  .command('rev', '更新工程版本号')
+  .command('release', '蜻蜓发布')
+  .command('lint', '执行一次代码检查')
+  .command('test', '执行单元测试')
+  .command('publish', '工程/组件发布(弃用)')
+  .parse(process.argv)
+
+  // 退出事件
+  process.on('exit', function () {
+    console.log(chalk.blue("\n" + "--- CUBE 进程退出 ---" + "\n"));
+  });
+
+// // combine styled and normal strings
+// console.log(chalk.blue('Hello') + 'World' + chalk.red('!'));
+//
+// // compose multiple styles using the chainable API
+// console.log(chalk.blue.bgRed.bold('Hello world!'));
+//
+// // pass in multiple arguments
+// console.log(chalk.blue('Hello', 'World!', 'Foo', 'bar', 'biz', 'baz'));
+//
+// // nest styles
+// console.log(chalk.red('Hello', chalk.underline.bgBlue('world') + '!'));
+//
+// // nest styles of the same type even (color, underline, background)
+// console.log(chalk.green(
+//     'I am a green line ' +
+//     chalk.blue.underline.bold('with a blue substring') +
+//     ' that becomes green again!'
+// ));
+
+// var child = exec('node --version', {async:true});
+// child.stdout.on('data', function (data) {
+//   /* ... do something with data ... */
+//   console.log(data)
+// })
+
+// exec('some_long_running_process', function(code, stdout, stderr) {
+//   console.log('Exit code:', code);
+//   console.log('Program output:', stdout);
+//   console.log('Program stderr:', stderr);
+// });

@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+var init = require('../lib/init');
+
+// 初始化命令Runner
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var params = process.argv.slice(2);
+
+init(function(){
+  starter
+  .run('tnpm uninstall ' + params.join(' '), {inf: "正在卸载依赖 " + (params[0] || "...")})
+  .do()
+});

@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+
+// 初始化命令Runner
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+init(function(){
+  // 提交远程分支
+  var branch = git.getBranch();
+  starter.run(git.push(branch), {inf: "提交到远程仓库 " + branch + " 分支", display: "realtime"}).do();
+});

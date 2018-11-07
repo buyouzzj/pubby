@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+var path = require('path');
+var chalk = require('chalk');
+var inquirer = require('inquirer');
+var fs = require('fs');
+
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+var pkg = require('../lib/utils/pkg');
+var pkgContent = pkg.content();
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var changelog = '';
+
+init(function() {
+  // 获取分支名
+  var branchName = git.getBranch();
+  // 切换到master分支
+  if (branchName !== 'master') {
+    starter.run(git.checkout('master'), {inf: '当前分支 ' + branchName + '，切换到 master 分支'});
+    process.on('exit', function () {
+      if (branchName !== 'master') {
+        exec(git.checkout(branchName), { silent: true });
+        console.log('\n' + chalk.inverse("执行") + " " + '切换回 ' + branchName + ' 分支');
+      }
+    });
+  }
+
+  // 获取仓库更新
+  starter
+  .run(git.pull('master'), {inf: "获取远程 master 分支更新"})
+  .run(git.checkout('prod'), { display: 'silent' })
+  .run(git.pull('prod'), {inf: "获取远程 prod 分支更新"})
+  .run(git.checkout('master'), { display: 'silent' });
+  // 更新版本
+  starter
+  .run(code.buildProd, {inf: "执行本地编译", display: "realtime"})
+  .run(git.add(), { display: 'silent' })
+  .run(git.commit('cube: 本地构建完成'), { display: 'silent' })
+  .run(git.push('master'), { display: 'silent' })
+  .run(code.test, {inf: "执行单元测试", doOnce: true, callback: function(res) {
+    if (res === 'SUC') {
+      var currentVersion = pkg.content().version;
+      // 版本号管理
+      var questions = [
+        {
+          type: 'input',
+          name: 'version',
+          message: '更新构建版本号(上一版本: ' + currentVersion + '): ',
+          validate: function (value) {
+            var pass1 = value.match(/^\d{1,2}\.\d{1,2}\.\d{1,2}$/i);
+            if (pass1) {
+              var nowVer = value.split('.');
+              var pstVer = currentVersion.split('.');
+              if (nowVer[0] * 10000 + nowVer[1] * 100 + nowVer[2] * 1 >= pstVer[0] * 10000 + pstVer[1] * 100 + pstVer[2] * 1) {
+                return true;
+              }
+            }
+            return '请输入正确的版本号';
+          }
+        },
+        {
+          type: 'editor',
+          name: 'changelog',
+          message: '请输入更新说明: ',
+          validate: function (value) {
+            if (value) {
+              return true;
+            }
+            return '请输入更新说明';
+          }
+        }
+      ];
+
+      inquirer.prompt(questions).then(function(answers) {
+        pkgContent.version = answers.version;
+        changelog = answers.changelog;
+        // 写更新日志
+        fs.readFile(process.cwd() + '/README.md', 'utf-8', function (err, data) {
+          if (err) throw err
+          data = data.split('更新历史\n')[0] + "更新历史\n\n" +
+          ("### " + pkgContent.version + " (" + new Date().Format('yyyy-MM-dd hh:mm:ss') + ")" + "\n" + answers.changelog)
+          + data.split('更新历史\n')[1];
+          fs.writeFile(process.cwd() + '/README.md', data, function (err) {
+            if (err) throw err
+            console.log("\n"+chalk.green.inverse("成功") + " " + "变更日志记录成功\n");
+            // 写版本号
+            fs.writeFile(process.cwd() + '/package.json', JSON.stringify(pkgContent, null, 2), function (err) {
+              if (err) throw err
+              console.log(chalk.green.inverse("成功") + " " + "版本号更新成功\n");
+              // 更新git
+              starter
+              .run(git.add(), {inf: "保存代码变更"})
+              .run(git.commit('版本发布: ' + pkgContent.version), {inf: "提交本地仓库"})
+              .run(git.push('master'), {inf: "提交到远程 master 分支", display: "realtime"})
+              .run(git.checkout('prod'), { display: 'silent' })
+              .run(git.merge('master'), { inf: '合并到本地 prod 分支', display: 'realtime' })
+              .run(git.push('prod'), {inf: "同步到远程 prod 分支", display: "realtime"})
+              .run(git.checkout('master'), { display: 'silent' })
+              .do();
+            });
+          })
+        });
+      });
+    }
+  }}).do();
+});

@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+var chalk = require('chalk');
+var inquirer = require('inquirer');
+var fs = require('fs');
+var init = require('../lib/init');
+var git = require('../lib/utils/git');
+var pkg = require('../lib/utils/pkg');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var LocalStorage = require('node-localstorage').LocalStorage;
+
+var type = pkg.get('cube').type;
+var changelog = '';
+var params = process.argv.slice(2);
+
+// 版本号管理
+var questions = [
+  {
+    type: 'input',
+    name: 'changelog',
+    message: '请输入更新说明: ',
+    validate: function (value) {
+      if (value) {
+        return true;
+      }
+      return '请输入更新说明';
+    }
+  }
+];
+
+// 是否同步到远程分支
+var shouldPushQuestions = [
+  {
+    type: 'list',
+    name: 'push',
+    message: '是否push到远程分支？',
+    choices: ['是', '否'],
+  }
+];
+
+init(function(){
+  var localStorage = new LocalStorage('./scratch');
+  var publishStatus = localStorage.getItem("LAST_PUBLISH_STATUS");
+
+  if (!publishStatus) {
+    inquirer.prompt(questions).then(function(answers) {
+      changelog = answers.changelog.replace(/\s{2}/g, "\n");
+      console.log(' ');
+      taskList();
+    });
+  } else {
+    console.log(chalk.green.inverse("错误") + " " + "上次发布命令未完成，请先执行发布操作");
+  }
+
+});
+
+function taskList() {
+  // 组件需要编译，工程不需编译
+  if (type === "component") {
+    starter.run('npm run build', {inf: "正在执行编译"});
+  }
+
+  if (type === "react-component") {
+    starter.run(code.build, {inf: "正在执行编译"});
+  }
+
+  starter
+  .run(git.add(), {inf: "保存代码变更"})
+  .run(git.commit(changelog), {inf: "提交本地仓库"})
+
+  if (params[0]) {
+    pushOperation();
+  }
+
+  inquirer.prompt(shouldPushQuestions).then(function(answers) {
+    if (answers.push === "是") pushOperation();
+    else starter.do();
+  });
+}
+
+function pushOperation() {
+  // 提交远程分支
+  var branch = params[0] || git.getBranch();
+  starter.run(git.push(branch), {inf: "提交到远程仓库 " + branch + " 分支", display: "realtime"}).do();
+}

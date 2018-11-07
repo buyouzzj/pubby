@@ -1,0 +1,11 @@
+.git/
+.DS_Store
+.idea/
+scratch/
+coverage/
+npm-debug.log
+selenium-debug.log
+dist/com.js.map
+dist/test.js.map
+dist/test.js
+dist/index.html

@@ -1,0 +1,47 @@
+@import 'src/assets/css/mixins';
+@import 'src/assets/css/variables';
+
+.todo-title {
+  margin-bottom: 40px;
+  text-align: center;
+
+  span {
+    &:last-child {
+      margin-left: 30px;
+    }
+  }
+}
+
+.todo-add {
+  padding: 20px;
+  background: #eee;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+
+.add-input {
+  @include input-size('md');
+
+  width: 650px;
+  float: left;
+}
+
+.add-btn {
+  border: none;
+  margin-left: 20px;
+  width: 90px;
+  height: 32px;
+  line-height: 32px;
+  float: left;
+  text-align: center;
+  font-size: 14px;
+  background: $blue-base;
+  color: #fff;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: darken($blue-base, 10%);
+  }
+}

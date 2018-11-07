@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="format-detection" content="email=no">
+    <meta name="keywords" content="上数信息">
+    <meta name="description" content="上数信息">
+    <title>Shangshu React Mobile Project</title>
+    <!-- <link rel="icon" href="/datahub/images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/datahub/images/favicon.ico" type="image/x-icon"> -->
+    <!-- bizlog -->
+    <script>!function(){if(!window.BizLog){var n={_readyToRun:[],call:function(){var o,a=arguments;try{o=[].slice.call(a,0)}catch(i){var u=a.length;o=[];for(var c=0;u>c;c++)o.push(a[c])}n.addToRun(function(){n.call.apply(n,o)})},addToRun:function(o){"function"==typeof o&&(o._logTimer=new Date-0,n._readyToRun.push(o))}};window.BizLog=n}}();</script>
+    <!-- auto font-size for root -->
+    <script>!function(e,t){function i(){var t=n.getBoundingClientRect().width/750*1e3
+t/m>540&&(t=540*m)
+var i=t/10
+n.style.fontSize=(i>50?i:50)+"px",s.rem=e.rem=i}var a,r=e.document,n=r.documentElement,o=r.querySelector('meta[name="viewport"]'),l=r.querySelector('meta[name="flexible"]'),m=0,d=0,s=t.flexible||(t.flexible={})
+if(o){var p=o.getAttribute("content").match(/initial\-scale=([\d\.]+)/)
+p&&(d=parseFloat(p[1]),m=parseInt(1/d))}else if(l){var c=l.getAttribute("content")
+if(c){var u=c.match(/initial\-dpr=([\d\.]+)/),f=c.match(/maximum\-dpr=([\d\.]+)/)
+u&&(m=parseFloat(u[1]),d=parseFloat((1/m).toFixed(2))),f&&(m=parseFloat(f[1]),d=parseFloat((1/m).toFixed(2)))}}if(!m&&!d){var v=(e.navigator.appVersion.match(/android/gi),e.navigator.appVersion.match(/iphone/gi)),h=e.devicePixelRatio
+m=v?h>=3&&(!m||m>=3)?3:h>=2&&(!m||m>=2)?2:1:1,d=1/m}if(n.setAttribute("data-dpr",m),!o)if(o=r.createElement("meta"),o.setAttribute("name","viewport"),o.setAttribute("content","initial-scale="+d+", maximum-scale="+d+", minimum-scale="+d+", user-scalable=no"),n.firstElementChild)n.firstElementChild.appendChild(o)
+else{var x=r.createElement("div")
+x.appendChild(o),r.write(x.innerHTML)}e.addEventListener("resize",function(){clearTimeout(a),a=setTimeout(i,300)},!1),e.addEventListener("pageshow",function(e){e.persisted&&(clearTimeout(a),a=setTimeout(i,300))},!1),"complete"===r.readyState?r.body.style.fontSize=12*m+"px":r.addEventListener("DOMContentLoaded",function(e){r.body.style.fontSize=12*m+"px"},!1),i(),s.dpr=e.dpr=m,s.refreshRem=i,s.rem2px=function(e){var t=parseFloat(e)*this.rem
+return"string"==typeof e&&e.match(/rem$/)&&(t+="px"),t},s.px2rem=function(e){var t=parseFloat(e)/this.rem
+return"string"==typeof e&&e.match(/px$/)&&(t+="rem"),t}}(window,window.lib||(window.lib={}))</script>
+    <link href="dev.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- main tpl end -->
+    <!-- h5 global offline package start -->
+    <script src="https://a.alipayobjects.com/g/component/antbridge/1.1.4/antbridge.min.js"></script>
+    <!-- 选择react -->
+    <!-- <script src="https://as.alipayobjects.com/g/component/react/15.5.4/react.min.js"></script>
+    <script src="https://as.alipayobjects.com/g/component/react/15.5.4/react-dom.min.js"></script> -->
+    <!-- 移动端默认preact -->
+    <script src="https://a.alipayobjects.com/g/ssdata/preact-layer/8.1.1/index.js"></script>
+    <script src="https://a.alipayobjects.com/static/fastclick/1.0.6/fastclick.min.js"></script>
+    <script>if ('addEventListener' in document) { document.addEventListener('DOMContentLoaded', function() { FastClick.attach(document.body); }, false); }</script>
+    <!-- h5 global offline package end -->
+  </body>
+</html>

@@ -1,0 +1,188 @@
+#!/usr/bin/env node
+require('shelljs/global');
+var chalk = require('chalk');
+var inquirer = require('inquirer');
+var fs = require('fs');
+
+var path = require('path');
+var init = require('../lib/init');
+var pkg = require('../lib/utils/pkg');
+var git = require('../lib/utils/git');
+
+// 初始化命令Runner
+var code = require('../lib/code');
+var cmd = require('../lib/cmd');
+var starter = new cmd.CommandRunner();
+
+var LocalStorage = require('node-localstorage').LocalStorage;
+var localStorage = new LocalStorage('./scratch');
+
+var ver = pkg.get('version');
+var type = pkg.get('cube').type;
+var pkgContent = pkg.content();
+var changelog = '';
+
+// 版本号管理
+var questions = [
+  {
+    type: 'input',
+    name: 'version',
+    message: '更新构建版本号(上一版本: '+ver+'): ',
+    validate: function (value) {
+      var pass1 = value.match(/^\d{1,2}\.\d{1,2}\.\d{1,2}$/i);
+      if (pass1) {
+        var nowVer = value.split('.');
+        var pstVer = ver.split('.');
+        if (nowVer[0] * 10000 + nowVer[1] * 100 + nowVer[2] * 1 >= pstVer[0] * 10000 + pstVer[1] * 100 + pstVer[2] * 1) {
+          return true;
+        }
+      }
+      return '请输入正确的版本号';
+    }
+  },
+  {
+    type: 'editor',
+    name: 'changelog',
+    message: '请输入更新说明: ',
+    validate: function (value) {
+      if (value) {
+        return true;
+      }
+      return '请输入更新说明';
+    }
+  }
+];
+
+init(function(){
+  starter
+  .run(code.lint, {inf: "执行代码lint"})
+  .run(code.test, {inf: "执行单元测试"})
+  .run(git.pull(), {inf: "获取仓库更新", display: "realtime", doOnce: true, callback: function(status) {
+    if (status === "SUC") {
+      console.log(" ");
+      var publishStatus = localStorage.getItem("LAST_PUBLISH_STATUS");
+      // 上次成功，重新起一次
+      if (!publishStatus) {
+        // 先询问版本号和更新日志
+        inquirer.prompt(questions).then(function(answers) {
+          pkgContent.version = answers.version;
+          changelog = answers.changelog;
+          // 写更新日志
+          fs.readFile(process.cwd() + '/README.md', 'utf-8', function (err, data) {
+            if (err) throw err
+            data = data.split('更新历史\n')[0] + "更新历史\n\n" +
+            ("### " + pkgContent.version + " (" + new Date().Format('yyyy-MM-dd hh:mm:ss') + ")" + "\n" + answers.changelog)
+            + data.split('更新历史\n')[1];
+            fs.writeFile(process.cwd() + '/README.md', data, function (err) {
+              if (err) throw err
+              console.log("\n"+chalk.green.inverse("成功") + " " + "变更日志记录成功\n");
+              // 写版本号
+              fs.writeFile(process.cwd() + '/package.json', JSON.stringify(pkgContent, null, 2), function (err) {
+                if (err) throw err
+                console.log(chalk.green.inverse("成功") + " " + "版本号更新成功\n");
+                // 执行构建
+                buildProcess();
+              })
+            })
+          });
+        });
+      }
+      // 构建失败，重新构建
+      else if (publishStatus === 'BUILD_FAIL') {
+        console.log(chalk.green.inverse("恢复") + " " + "重新启动构建\n");
+        changelog = localStorage.getItem("LAST_PUBLISH_MESSAGE") || '';
+        buildProcess();
+      }
+      // 上次失败，恢复提交
+      else {
+        console.log(chalk.green.inverse("恢复") + " " + "重启上次失败的提交\n");
+        finalOp(publishStatus);
+      }
+
+        // starter.run(commandScript.build, {inf: "正在执行编译", doOnce: true, callback: function(status) {
+        //   if (status === "SUC") {
+        //     inquirer.prompt(questions).then(function(answers) {
+        //       pkg.version = answers.version;
+        //       changelog = answers.changelog;
+        //       fs.readFile(process.cwd() + '/README.md', 'utf-8', function (err, data) {
+        //         if (err) throw err
+        //         data = data.split('更新历史\n')[0] + "更新历史\n\n" +
+        //         ("### " + pkg.version + " (" + new Date().Format('yyyy-MM-dd hh:mm:ss') + ")" + "\n" + answers.changelog)
+        //         + data.split('更新历史\n')[1];
+        //         fs.writeFile(process.cwd() + '/README.md', data, function (err) {
+        //           if (err) throw err
+        //           console.log("\n"+chalk.green.inverse("成功") + " " + "变更日志记录成功\n");
+        //           fs.writeFile(process.cwd() + '/package.json', JSON.stringify(pkg, null, 2), function (err) {
+        //             if (err) throw err
+        //             console.log(chalk.green.inverse("成功") + " " + "版本号更新成功\n");
+        //             taskList();
+        //             finalOp();
+        //           })
+        //         })
+        //       });
+        //     });
+        //   }
+        // }}).do();
+    } else {
+      console.log(chalk.red.inverse("提示") + " " + "若提示Authentication failed，请再次执行publish命令，否则请执行一次cube commit操作");
+      exit(1);
+    }
+  }}).do();
+});
+
+function buildProcess() {
+  // 编译一次
+  starter.run(code.build, {inf: "正在执行编译", doOnce: true, callback: function(status) {
+    if (status === "SUC") {
+      localStorage.removeItem("LAST_PUBLISH_MESSAGE");
+      taskList();
+      finalOp();
+    } else {
+      localStorage.setItem("LAST_PUBLISH_STATUS", "BUILD_FAIL");
+      localStorage.setItem("LAST_PUBLISH_MESSAGE", changelog);
+    }
+  }}).do();
+}
+
+function taskList() {
+  // 组件需要编译，工程不需编译
+  // if (type === "component") {
+  // }
+
+  starter
+  .run(git.add(), {inf: "保存代码变更"})
+  .run(git.commit('版本发布: ' + pkgContent.version), {inf: "提交本地仓库"})
+  .run(git.tag(pkgContent.version), {inf: "新增版本号 " + pkgContent.version, callback: function(status) {
+    if (status === "SUC") {
+      localStorage.setItem("LAST_PUBLISH_STATUS", "DOING");
+    }
+  }})
+}
+
+function finalOp(publishStatus) {
+  // TAG提交成功，上传失败时，恢复动作
+  if (publishStatus && publishStatus === "TAG") {
+    // 恢复动作到DOING
+    localStorage.setItem("LAST_PUBLISH_STATUS", "DOING");
+    starter
+    .run(git.delTag(pkgContent.version), {inf: "删除远程TAG"})
+  }
+
+  starter.run(git.pushTag(pkgContent.version), {inf: "提交版本号", display: "realtime", callback: function(status) {
+    if (status === "SUC") {
+      localStorage.setItem("LAST_PUBLISH_STATUS", "TAG");
+    }
+  }})
+  .run(git.push(git.getBranch()), {inf: "提交远程仓库", display: "realtime", callback: function(status) {
+    if (status === "SUC") {
+      localStorage.removeItem("LAST_PUBLISH_STATUS");
+    }
+  }})
+
+  // 组件需要上到tnpm
+  if (type.match("component")) {
+    starter.run('tnpm publish', {inf: "发布到tnpm"})
+  }
+
+  starter.do();
+}
